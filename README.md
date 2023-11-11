@@ -95,45 +95,45 @@ You can test the Index implementation performance by running perf tool like `hey
 
 Initial implementation:
 ```
-# hey -n 30 -c 1 'http://localhost:8080/search?q=hello&q=world&q=fast'
+# hey -n 30 -c 1 'http://localhost:8080/search?q=sunny&q=hello'
 
 Summary:
-  Total:	12.0965 secs
-  Slowest:	0.4220 secs
-  Fastest:	0.3952 secs
-  Average:	0.4032 secs
-  Requests/sec:	2.4801
+  Total:	34.3913 secs
+  Slowest:	1.1664 secs
+  Fastest:	1.1334 secs
+  Average:	1.1464 secs
+  Requests/sec:	0.8723
 
 
 Response time histogram:
-  0.395 [1]	|■■■■■
-  0.398 [4]	|■■■■■■■■■■■■■■■■■■■■
-  0.401 [3]	|■■■■■■■■■■■■■■■
-  0.403 [8]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  0.406 [8]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  0.409 [4]	|■■■■■■■■■■■■■■■■■■■■
-  0.411 [1]	|■■■■■
-  0.414 [0]	|
-  0.417 [0]	|
-  0.419 [0]	|
-  0.422 [1]	|■■■■■
+  1.133 [1]	|■■■■
+  1.137 [0]	|
+  1.140 [3]	|■■■■■■■■■■■■
+  1.143 [6]	|■■■■■■■■■■■■■■■■■■■■■■■■
+  1.147 [5]	|■■■■■■■■■■■■■■■■■■■■
+  1.150 [10]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  1.153 [2]	|■■■■■■■■
+  1.157 [2]	|■■■■■■■■
+  1.160 [0]	|
+  1.163 [0]	|
+  1.166 [1]	|■■■■
 
 
 Latency distribution:
-  10% in 0.3976 secs
-  25% in 0.4009 secs
-  50% in 0.4031 secs
-  75% in 0.4054 secs
-  90% in 0.4079 secs
-  95% in 0.4220 secs
+  10% in 1.1398 secs
+  25% in 1.1426 secs
+  50% in 1.1467 secs
+  75% in 1.1491 secs
+  90% in 1.1543 secs
+  95% in 1.1664 secs
   0% in 0.0000 secs
 
 Details (average, fastest, slowest):
-  DNS+dialup:	0.0002 secs, 0.3952 secs, 0.4220 secs
-  DNS-lookup:	0.0001 secs, 0.0000 secs, 0.0021 secs
-  req write:	0.0000 secs, 0.0000 secs, 0.0008 secs
-  resp wait:	0.4028 secs, 0.3951 secs, 0.4135 secs
-  resp read:	0.0001 secs, 0.0000 secs, 0.0004 secs
+  DNS+dialup:	0.0002 secs, 1.1334 secs, 1.1664 secs
+  DNS-lookup:	0.0001 secs, 0.0000 secs, 0.0017 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0007 secs
+  resp wait:	1.1460 secs, 1.1333 secs, 1.1596 secs
+  resp read:	0.0001 secs, 0.0001 secs, 0.0004 secs
 
 Status code distribution:
   [200]	30 responses
@@ -141,47 +141,45 @@ Status code distribution:
 
 Target implementation performance:
 ```
-# hey -n 30 -c 1 'http://localhost:8080/search?q=hello&q=world&q=test'
+# hey -n 30 -c 1 'http://localhost:8080/search?q=sunny&q=hello'
 
 Summary:
-  Total:	0.0964 secs
-  Slowest:	0.0186 secs
-  Fastest:	0.0024 secs
-  Average:	0.0032 secs
-  Requests/sec:	311.0577
+  Total:	0.1196 secs
+  Slowest:	0.0237 secs
+  Fastest:	0.0030 secs
+  Average:	0.0040 secs
+  Requests/sec:	250.8953
 
-  Total data:	450 bytes
-  Size/request:	15 bytes
 
 Response time histogram:
-  0.002 [1]	|■
-  0.004 [28]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
-  0.006 [0]	|
+  0.003 [1]	|■
+  0.005 [28]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
   0.007 [0]	|
   0.009 [0]	|
-  0.010 [0]	|
-  0.012 [0]	|
-  0.014 [0]	|
+  0.011 [0]	|
+  0.013 [0]	|
   0.015 [0]	|
-  0.017 [0]	|
-  0.019 [1]	|■
+  0.018 [0]	|
+  0.020 [0]	|
+  0.022 [0]	|
+  0.024 [1]	|■
 
 
 Latency distribution:
-  10% in 0.0024 secs
-  25% in 0.0025 secs
-  50% in 0.0026 secs
-  75% in 0.0028 secs
-  90% in 0.0033 secs
-  95% in 0.0186 secs
+  10% in 0.0031 secs
+  25% in 0.0032 secs
+  50% in 0.0033 secs
+  75% in 0.0034 secs
+  90% in 0.0038 secs
+  95% in 0.0237 secs
   0% in 0.0000 secs
 
 Details (average, fastest, slowest):
-  DNS+dialup:	0.0003 secs, 0.0024 secs, 0.0186 secs
-  DNS-lookup:	0.0001 secs, 0.0000 secs, 0.0027 secs
-  req write:	0.0000 secs, 0.0000 secs, 0.0007 secs
-  resp wait:	0.0028 secs, 0.0023 secs, 0.0071 secs
-  resp read:	0.0000 secs, 0.0000 secs, 0.0007 secs
+  DNS+dialup:	0.0003 secs, 0.0030 secs, 0.0237 secs
+  DNS-lookup:	0.0001 secs, 0.0000 secs, 0.0025 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0010 secs
+  resp wait:	0.0036 secs, 0.0030 secs, 0.0123 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0013 secs
 
 Status code distribution:
   [200]	30 responses
