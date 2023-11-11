@@ -96,6 +96,8 @@ go build -o out/ github.com/getnexar/golang-programming-task/doc-index/cmd/... &
 
 * You should not replace `Index` implementation with any database solution
 
+* Feel free to refactor or change the structure of any other part of the project if you feel it fits better
+
 ### Benchmarking.
 
 You can test the Index implementation performance by running perf tool like `hey`
