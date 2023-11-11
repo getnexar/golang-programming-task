@@ -1,4 +1,4 @@
-module github.com/getnexar/golang-programming-task
+module github.com/getnexar/golang-programming-task/doc-index
 
 go 1.19
 
