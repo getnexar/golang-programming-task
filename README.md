@@ -68,16 +68,16 @@ go build -o out/ github.com/getnexar/golang-programming-task/doc-index/cmd/... &
 
     ```
     {
-    "results": [
-        {
-        "description": "**hello world** - Upscaled by @NeonNebula (fast)",
-        "imageUrl": "https://cdn.discordapp.com/attachments/941971306004504638/1099717251684376596/NeonNebula_hello_world_499f2603-2ee9-4d1d-bdb2-6fce9af4dd55.png"
-        },
-        {
-        "description": "**hello world blue technology toy style --v 5** - @TechnoKing (fast)",
-        "imageUrl": "https://cdn.discordapp.com/attachments/995431233121161246/1101927504731701401/TechnoKing_hello_world_blue_technology_toy_style_f37ac2e2-94e4-4c8c-b0b0-1574841db1a3.png"
-        }
-    ]
+        "results": [
+            {
+                "description": "**hello world** - Upscaled by @NeonNebula (fast)",
+                "imageUrl": "https://cdn.discordapp.com/attachments/941971306004504638/1099717251684376596/NeonNebula_hello_world_499f2603-2ee9-4d1d-bdb2-6fce9af4dd55.png"
+            },
+            {
+                "description": "**hello world blue technology toy style --v 5** - @TechnoKing (fast)",
+                "imageUrl": "https://cdn.discordapp.com/attachments/995431233121161246/1101927504731701401/TechnoKing_hello_world_blue_technology_toy_style_f37ac2e2-94e4-4c8c-b0b0-1574841db1a3.png"
+            }
+        ]
     }
     ```
 
