@@ -66,7 +66,7 @@ go build -o out/ github.com/getnexar/golang-programming-task/doc-index/cmd/... &
 
 1. Change the search response format so it looks like this:
 
-    ```
+    ```json
     {
         "results": [
             {
@@ -85,7 +85,14 @@ go build -o out/ github.com/getnexar/golang-programming-task/doc-index/cmd/... &
    
 3. Add tests for `Index`
 
-4. [Optional] Add a new endpoint which deletes documents from the Index for a given keyword / set of keywords
+4. Change search handler to accept `POST` request with payload:
+    ```json
+    {
+        "keywords": ["sunny", "hello"]
+    }
+    ```
+
+5. [Optional] Add a new endpoint which deletes documents from the Index for a given keyword / set of keywords
 
 * You should not replace `Index` implementation with any database solution
 
