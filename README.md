@@ -81,6 +81,56 @@ go build -o out/ github.com/getnexar/golang-programming-task/doc-index/cmd/... &
     }
     ```
 
-2. Optimize the `Index` structure and search api endpoint so it works much faster.
+2. Optimize the `Index` structure and search api endpoint so it works much faster and outputs only full keyword matches
 
 3. [Optional] Add a new endpoint which deletes documents from the Index for a given keyword / set of keywords
+
+### Benchmarking.
+
+You can test the Index implementation performance by running perf tool like `hey`
+
+Initial implementation:
+```
+# hey -n 30 -c 1 'http://localhost:8080/search?q=hello+world'
+
+Summary:
+  Total:	26.2670 secs
+  Slowest:	0.8947 secs
+  Fastest:	0.8584 secs
+  Average:	0.8756 secs
+  Requests/sec:	1.1421
+
+
+Response time histogram:
+  0.858 [1]	|■■■■■■■
+  0.862 [0]	|
+  0.866 [4]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.869 [6]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.873 [0]	|
+  0.877 [5]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.880 [4]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.884 [4]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.887 [3]	|■■■■■■■■■■■■■■■■■■■■
+  0.891 [0]	|
+  0.895 [3]	|■■■■■■■■■■■■■■■■■■■■
+
+
+Latency distribution:
+  10% in 0.8653 secs
+  25% in 0.8672 secs
+  50% in 0.8748 secs
+  75% in 0.8825 secs
+  90% in 0.8913 secs
+  95% in 0.8947 secs
+  0% in 0.0000 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0002 secs, 0.8584 secs, 0.8947 secs
+  DNS-lookup:	0.0001 secs, 0.0000 secs, 0.0020 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0007 secs
+  resp wait:	0.8752 secs, 0.8583 secs, 0.8946 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0004 secs
+
+Status code distribution:
+  [200]	30 responses
+```
