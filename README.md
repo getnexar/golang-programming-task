@@ -82,8 +82,12 @@ go build -o out/ github.com/getnexar/golang-programming-task/doc-index/cmd/... &
     ```
 
 2. Optimize the `Index` structure and search api endpoint so it works much faster and outputs only full keyword matches
+   
+3. Add tests for `Index`
 
-3. [Optional] Add a new endpoint which deletes documents from the Index for a given keyword / set of keywords
+4. [Optional] Add a new endpoint which deletes documents from the Index for a given keyword / set of keywords
+
+* You should not replace `Index` implementation with any database solution
 
 ### Benchmarking.
 
@@ -130,6 +134,54 @@ Details (average, fastest, slowest):
   req write:	0.0000 secs, 0.0000 secs, 0.0007 secs
   resp wait:	0.8752 secs, 0.8583 secs, 0.8946 secs
   resp read:	0.0001 secs, 0.0000 secs, 0.0004 secs
+
+Status code distribution:
+  [200]	30 responses
+```
+
+Target implementation performance:
+```
+➜ hey -n 30 -c 1 'http://localhost:8080/search?q=hello+world'
+
+Summary:
+  Total:	0.0200 secs
+  Slowest:	0.0157 secs
+  Fastest:	0.0001 secs
+  Average:	0.0007 secs
+  Requests/sec:	1497.5883
+
+  Total data:	450 bytes
+  Size/request:	15 bytes
+
+Response time histogram:
+  0.000 [1]	|■
+  0.002 [28]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.003 [0]	|
+  0.005 [0]	|
+  0.006 [0]	|
+  0.008 [0]	|
+  0.009 [0]	|
+  0.011 [0]	|
+  0.013 [0]	|
+  0.014 [0]	|
+  0.016 [1]	|■
+
+
+Latency distribution:
+  10% in 0.0001 secs
+  25% in 0.0001 secs
+  50% in 0.0001 secs
+  75% in 0.0001 secs
+  90% in 0.0002 secs
+  95% in 0.0157 secs
+  0% in 0.0000 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0003 secs, 0.0001 secs, 0.0157 secs
+  DNS-lookup:	0.0001 secs, 0.0000 secs, 0.0031 secs
+  req write:	0.0000 secs, 0.0000 secs, 0.0011 secs
+  resp wait:	0.0002 secs, 0.0001 secs, 0.0036 secs
+  resp read:	0.0000 secs, 0.0000 secs, 0.0009 secs
 
 Status code distribution:
   [200]	30 responses
