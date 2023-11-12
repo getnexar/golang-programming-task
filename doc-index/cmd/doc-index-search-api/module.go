@@ -69,6 +69,7 @@ func provideHttpRouter(handlers handlers.HandlersInterface) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Get("/healthcheck", handlers.Healthcheck)
 	r.Get("/search", handlers.Search)
+	r.Post("/search", handlers.Search)
 	return r
 }
 

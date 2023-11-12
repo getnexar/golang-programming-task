@@ -14,6 +14,10 @@ type Handlers struct {
 	index  index.IndexInterface
 }
 
+type JSONSearchQuery struct {
+	Keywords []string `json:"keywords"`
+}
+
 func NewHandlers(logger *zap.SugaredLogger, index index.IndexInterface) *Handlers {
 	return &Handlers{
 		index:  index,
@@ -29,15 +33,59 @@ func (h *Handlers) Healthcheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	q := r.Form["q"]
+	q := h.getSearchQuery(r)
+
+	if q == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	results, err := h.index.Search(q...)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
 	response := handlers_models.SearchResponse{Results: results}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+
 	json.NewEncoder(w).Encode(response)
+}
+
+func (h *Handlers) getSearchQuery(r *http.Request) []string {
+	if r.Method == http.MethodGet {
+		err := r.ParseForm()
+		if err != nil {
+			return nil
+		}
+
+		return r.Form["q"]
+	}
+
+	if r.Method == http.MethodPost {
+		if r.Header.Get("Content-Type") == "application/json" {
+			var searchQuery JSONSearchQuery
+			err := json.NewDecoder(r.Body).Decode(&searchQuery)
+
+			if err != nil {
+				return nil
+			}
+
+			return searchQuery.Keywords
+		} else if r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+			err := r.ParseForm()
+
+			if err != nil {
+				return nil
+			}
+
+			return r.Form["q"]
+		} else {
+			return nil
+		}
+	}
+
+	return nil
 }
