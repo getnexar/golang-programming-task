@@ -15,9 +15,14 @@ import (
 	Should be improved.
 */
 
+type IndexedDocument struct {
+	Description string `json:"description"`
+	ImageUrl    string `json:"imageUrl"`
+}
+
 type Index struct {
 	logger     *zap.SugaredLogger
-	documents  [][2]string
+	documents  []IndexedDocument
 	maxResults int
 }
 
@@ -30,7 +35,7 @@ func NewIndex(
 	index := &Index{
 		maxResults: maxResults,
 		logger:     logger,
-		documents:  make([][2]string, 0),
+		documents:  make([]IndexedDocument, 0, maxResults),
 	}
 	dir, err := os.Open(indexDataDir)
 	if err != nil {
@@ -71,7 +76,14 @@ func NewIndex(
 				// Skip invalid records
 				continue
 			}
-			index.documents = append(index.documents, [2]string{record[3], record[4]})
+
+			index.documents = append(
+				index.documents,
+				IndexedDocument{
+					Description: record[3],
+					ImageUrl:    record[4],
+				},
+			)
 		}
 	}
 
@@ -82,12 +94,12 @@ func NewIndex(
 	return index, nil
 }
 
-func (i *Index) Search(keywords ...string) ([][2]string, error) {
-	results := make([][2]string, 0)
+func (i *Index) Search(keywords ...string) ([]IndexedDocument, error) {
+	results := make([]IndexedDocument, 0)
 	for _, document := range i.documents {
 		found := true
 		for _, keyword := range keywords {
-			if !strings.Contains(document[0], keyword) {
+			if !strings.Contains(document.Description, keyword) {
 				found = false
 				break
 			}
