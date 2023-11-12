@@ -155,19 +155,25 @@ func (i *Index) query(keywords []string, callback func(documentIndex int, docume
 	foundDocuments := 0
 
 	for documentIndex, document := range i.documents {
-		for _, keyword := range keywords {
-			if !document.deleted && slices.Index(document.tokens, i.tokenizer(keyword)) >= 0 {
-				foundDocuments++
-				callback(documentIndex, &i.documents[documentIndex])
-
-				break
-			}
+		if !document.deleted && i.andMatch(keywords, &document) {
+			foundDocuments++
+			callback(documentIndex, &i.documents[documentIndex])
 		}
 
 		if foundDocuments >= i.config.MaxSearchResults {
 			break
 		}
 	}
+}
+
+func (i *Index) andMatch(keywords []string, document *IndexedDocument) bool {
+	for _, keyword := range keywords {
+		if slices.Index(document.tokens, i.tokenizer(keyword)) < 0 {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (i *Index) getTokens(text string) []string {

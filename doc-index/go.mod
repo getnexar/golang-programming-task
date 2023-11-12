@@ -1,6 +1,6 @@
 module github.com/getnexar/golang-programming-task/doc-index
 
-go 1.19
+go 1.21
 
 require (
 	github.com/creasty/defaults v1.7.0 // indirect

@@ -194,19 +194,14 @@ func TestQuery(t *testing.T) {
 			expectedDocuments: []IndexedDocument{index.documents[0]},
 		},
 		{
-			name:              "First and Second documents",
-			keywords:          []string{"one", "two"},
-			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[1]},
+			name:              "Second document. Case insensitive. Two keywords",
+			keywords:          []string{"two", "Document"},
+			expectedDocuments: []IndexedDocument{index.documents[1]},
 		},
 		{
-			name:              "First and Third documents",
-			keywords:          []string{"one", "three"},
-			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
-		},
-		{
-			name:              "Query for three keywords, but only two documents match",
-			keywords:          []string{"one", "three", "four"},
-			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
+			name:              "Query for three keywords, None match",
+			keywords:          []string{"one", "document", "four"},
+			expectedDocuments: []IndexedDocument{},
 		},
 		{
 			name:              "All documents match",
@@ -292,19 +287,14 @@ func TestSearch(t *testing.T) {
 			expectedDocuments: []IndexedDocument{index.documents[0]},
 		},
 		{
-			name:              "First and Second documents",
-			keywords:          []string{"one", "two"},
-			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[1]},
+			name:              "Second document. Case insensitive. Two keywords",
+			keywords:          []string{"two", "Document"},
+			expectedDocuments: []IndexedDocument{index.documents[1]},
 		},
 		{
-			name:              "First and Third documents",
-			keywords:          []string{"one", "three"},
-			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
-		},
-		{
-			name:              "Query for three keywords, but only two documents match",
-			keywords:          []string{"one", "three", "four"},
-			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
+			name:              "Query for three keywords, None match",
+			keywords:          []string{"one", "document", "four"},
+			expectedDocuments: []IndexedDocument{},
 		},
 		{
 			name:              "All documents match",
@@ -349,13 +339,22 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name:                   "Delete First and Second documents",
-			keywords:               []string{"one", "two"},
+			keywords:               []string{"top", "secret"},
 			affectedDocumentsCount: 2,
 			expectedDocuments:      []IndexedDocument{index.documents[2]},
+		},
+		{
+			name:                   "No documents to delete",
+			keywords:               []string{"document", "not", "found"},
+			affectedDocumentsCount: 0,
+			expectedDocuments:      index.documents,
 		},
 	}
 
 	for _, test := range tests {
+		// Restore deleted documents
+		index.documents = getSampleData(index)
+
 		t.Run(
 			test.name, func(t *testing.T) {
 				affectedDocuments := index.Delete(test.keywords...)
@@ -371,9 +370,6 @@ func TestDelete(t *testing.T) {
 				}
 			},
 		)
-
-		// Restore deleted documents
-		index.documents = getSampleData(index)
 	}
 }
 
@@ -398,14 +394,14 @@ func createTestFile(t *testing.T, filename string, data []byte) {
 func getSampleData(index *Index) []IndexedDocument {
 	return []IndexedDocument{
 		{
-			Description: "Document One",
+			Description: "Document One. Top secret!",
 			ImageUrl:    "image-url",
-			tokens:      index.getTokens("Document One"),
+			tokens:      index.getTokens("Document One. Top secret!"),
 		},
 		{
-			Description: "Document Two",
+			Description: "Document Two. Top secret!",
 			ImageUrl:    "image-url",
-			tokens:      index.getTokens("Document Two"),
+			tokens:      index.getTokens("Document Two. Top secret!"),
 		},
 		{
 			Description: "Document Three",
