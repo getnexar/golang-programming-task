@@ -54,8 +54,24 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func (h *Handlers) DeleteDocument(w http.ResponseWriter, r *http.Request) {
+	q := h.getSearchQuery(r)
+
+	if q == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	deletedDocumentsCount := h.index.Delete(q...)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(deletedDocumentsCount)
+}
+
 func (h *Handlers) getSearchQuery(r *http.Request) []string {
-	if r.Method == http.MethodGet {
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete {
 		err := r.ParseForm()
 		if err != nil {
 			return nil

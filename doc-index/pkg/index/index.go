@@ -21,12 +21,17 @@ type IndexedDocument struct {
 	Description string `json:"description"`
 	ImageUrl    string `json:"imageUrl"`
 	tokens      []string
+	deleted     bool
 }
 
 type Index struct {
 	logger    *zap.SugaredLogger
 	documents []IndexedDocument
 	config    *config.Config
+}
+
+type AffectedDocuments struct {
+	Count int `json:"count"`
 }
 
 func NewIndex(
@@ -95,27 +100,74 @@ func (i *Index) getTokenizedDocument(record []string) IndexedDocument {
 		Description: record[3],
 		ImageUrl:    record[4],
 		tokens:      i.getTokens(record[3]),
+		deleted:     false,
 	}
 }
 
 func (i *Index) Search(keywords ...string) ([]IndexedDocument, error) {
 	results := make([]IndexedDocument, 0)
 
+	i.query(
+		keywords, func(documentIndex int, document *IndexedDocument) {
+			results = append(results, *document)
+		},
+	)
+
+	return results, nil
+}
+
+func (i *Index) Delete(keywords ...string) AffectedDocuments {
+	deletedDocumentsCount := 0
+
+	i.query(
+		keywords, func(documentIndex int, document *IndexedDocument) {
+			document.deleted = true
+			deletedDocumentsCount++
+		},
+	)
+
+	i.purgeDeletedDocuments()
+
+	return AffectedDocuments{
+		Count: deletedDocumentsCount,
+	}
+}
+
+func (i *Index) purgeDeletedDocuments() AffectedDocuments {
+	purgedDocumentsCount := 0
+	result := make([]IndexedDocument, 0, len(i.documents))
+
 	for _, document := range i.documents {
+		if !document.deleted {
+			result = append(result, document)
+			purgedDocumentsCount++
+		}
+	}
+
+	i.documents = result
+
+	return AffectedDocuments{
+		Count: purgedDocumentsCount,
+	}
+}
+
+func (i *Index) query(keywords []string, callback func(documentIndex int, document *IndexedDocument)) {
+	foundDocuments := 0
+
+	for documentIndex, document := range i.documents {
 		for _, keyword := range keywords {
-			if slices.Index(document.tokens, i.tokenizer(keyword)) >= 0 {
-				results = append(results, document)
+			if !document.deleted && slices.Index(document.tokens, i.tokenizer(keyword)) >= 0 {
+				foundDocuments++
+				callback(documentIndex, &i.documents[documentIndex])
 
 				break
 			}
 		}
 
-		if len(results) >= i.config.MaxSearchResults {
+		if foundDocuments >= i.config.MaxSearchResults {
 			break
 		}
 	}
-
-	return results, nil
 }
 
 func (i *Index) getTokens(text string) []string {

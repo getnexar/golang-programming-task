@@ -178,6 +178,205 @@ func TestNewIndex(t *testing.T) {
 	)
 }
 
+func TestQuery(t *testing.T) {
+	index := newIndex()
+	index.documents = getSampleData(index)
+	index.config.MaxSearchResults = len(index.documents)
+
+	tests := []struct {
+		name              string
+		keywords          []string
+		expectedDocuments []IndexedDocument
+	}{
+		{
+			name:              "First Document",
+			keywords:          []string{"one"},
+			expectedDocuments: []IndexedDocument{index.documents[0]},
+		},
+		{
+			name:              "First and Second documents",
+			keywords:          []string{"one", "two"},
+			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[1]},
+		},
+		{
+			name:              "First and Third documents",
+			keywords:          []string{"one", "three"},
+			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
+		},
+		{
+			name:              "Query for three keywords, but only two documents match",
+			keywords:          []string{"one", "three", "four"},
+			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
+		},
+		{
+			name:              "All documents match",
+			keywords:          []string{"document"},
+			expectedDocuments: index.documents,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(
+			test.name, func(t *testing.T) {
+				results := make([]IndexedDocument, 0)
+
+				index.query(
+					test.keywords, func(documentIndex int, document *IndexedDocument) {
+						results = append(results, *document)
+					},
+				)
+
+				if !reflect.DeepEqual(results, test.expectedDocuments) {
+					t.Errorf("Expected documents %v, got %v", test.expectedDocuments, results)
+				}
+			},
+		)
+	}
+}
+
+func TestMaxSearchResults(t *testing.T) {
+	index := newIndex()
+	index.documents = getSampleData(index)
+
+	tests := []struct {
+		name       string
+		keywords   []string
+		maxResults int
+	}{
+		{
+			name:       "3 documents match",
+			keywords:   []string{"document"},
+			maxResults: 3,
+		},
+		{
+			name:       "2 documents match",
+			keywords:   []string{"document"},
+			maxResults: 2,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(
+			test.name, func(t *testing.T) {
+				foundDocuments := 0
+
+				index.config.MaxSearchResults = test.maxResults
+
+				index.query(
+					test.keywords, func(documentIndex int, document *IndexedDocument) {
+						foundDocuments++
+					},
+				)
+
+				if foundDocuments != test.maxResults {
+					t.Errorf("Expected %d results, got %d", test.maxResults, foundDocuments)
+				}
+			},
+		)
+	}
+}
+
+func TestSearch(t *testing.T) {
+	index := newIndex()
+	index.documents = getSampleData(index)
+	index.config.MaxSearchResults = 10
+
+	tests := []struct {
+		name              string
+		keywords          []string
+		expectedDocuments []IndexedDocument
+	}{
+		{
+			name:              "First Document",
+			keywords:          []string{"one"},
+			expectedDocuments: []IndexedDocument{index.documents[0]},
+		},
+		{
+			name:              "First and Second documents",
+			keywords:          []string{"one", "two"},
+			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[1]},
+		},
+		{
+			name:              "First and Third documents",
+			keywords:          []string{"one", "three"},
+			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
+		},
+		{
+			name:              "Query for three keywords, but only two documents match",
+			keywords:          []string{"one", "three", "four"},
+			expectedDocuments: []IndexedDocument{index.documents[0], index.documents[2]},
+		},
+		{
+			name:              "All documents match",
+			keywords:          []string{"document"},
+			expectedDocuments: index.documents,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(
+			test.name, func(t *testing.T) {
+				results, err := index.Search(test.keywords...)
+
+				if err != nil {
+					t.Errorf("Error searching index: %v", err)
+				}
+
+				if !reflect.DeepEqual(results, test.expectedDocuments) {
+					t.Errorf("Expected documents %v, got %v", test.expectedDocuments, results)
+				}
+			},
+		)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	index := newIndex()
+	index.documents = getSampleData(index)
+	index.config.MaxSearchResults = 10
+
+	tests := []struct {
+		name                   string
+		keywords               []string
+		affectedDocumentsCount int
+		expectedDocuments      []IndexedDocument
+	}{
+		{
+			name:                   "Delete First Document",
+			keywords:               []string{"one"},
+			affectedDocumentsCount: 1,
+			expectedDocuments:      []IndexedDocument{index.documents[1], index.documents[2]},
+		},
+		{
+			name:                   "Delete First and Second documents",
+			keywords:               []string{"one", "two"},
+			affectedDocumentsCount: 2,
+			expectedDocuments:      []IndexedDocument{index.documents[2]},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(
+			test.name, func(t *testing.T) {
+				affectedDocuments := index.Delete(test.keywords...)
+
+				if affectedDocuments.Count != test.affectedDocumentsCount {
+					t.Errorf(
+						"Expected %d affected documents, got %d", test.affectedDocumentsCount, affectedDocuments.Count,
+					)
+				}
+
+				if !reflect.DeepEqual(index.documents, test.expectedDocuments) {
+					t.Errorf("Expected documents %v, got %v", test.expectedDocuments, index.documents)
+				}
+			},
+		)
+
+		// Restore deleted documents
+		index.documents = getSampleData(index)
+	}
+}
+
 func newIndex() *Index {
 	configOptions, _ := config.Load()
 
@@ -193,5 +392,25 @@ func createTestFile(t *testing.T, filename string, data []byte) {
 
 	if err != nil {
 		t.Errorf("Error writing non CVS file: %v", err)
+	}
+}
+
+func getSampleData(index *Index) []IndexedDocument {
+	return []IndexedDocument{
+		{
+			Description: "Document One",
+			ImageUrl:    "image-url",
+			tokens:      index.getTokens("Document One"),
+		},
+		{
+			Description: "Document Two",
+			ImageUrl:    "image-url",
+			tokens:      index.getTokens("Document Two"),
+		},
+		{
+			Description: "Document Three",
+			ImageUrl:    "image-url",
+			tokens:      index.getTokens("Document Three"),
+		},
 	}
 }

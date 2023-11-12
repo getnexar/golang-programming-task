@@ -70,6 +70,7 @@ func provideHttpRouter(handlers handlers.HandlersInterface) http.Handler {
 	r.Get("/healthcheck", handlers.Healthcheck)
 	r.Get("/search", handlers.Search)
 	r.Post("/search", handlers.Search)
+	r.Delete("/document", handlers.DeleteDocument)
 	return r
 }
 
