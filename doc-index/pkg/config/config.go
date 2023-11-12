@@ -19,6 +19,8 @@ type Config struct {
 	LogLevel         string `json:"logLevel" default:"debug"`
 	IndexDataDir     string `json:"indexDataDir" default:"/tmp/data"`
 	MaxSearchResults int    `json:"maxSearchResults" default:"10"`
+	MinTokenLength   int    `json:"minTokenLength" default:"3"`
+	MaxTokenLength   int    `json:"maxTokenLength" default:"20"`
 }
 
 func Default() *Config {

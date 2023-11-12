@@ -2,8 +2,10 @@ package index
 
 import (
 	"encoding/csv"
+	"github.com/getnexar/golang-programming-task/doc-index/pkg/config"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,26 +20,26 @@ import (
 type IndexedDocument struct {
 	Description string `json:"description"`
 	ImageUrl    string `json:"imageUrl"`
+	tokens      []string
 }
 
 type Index struct {
-	logger     *zap.SugaredLogger
-	documents  []IndexedDocument
-	maxResults int
+	logger    *zap.SugaredLogger
+	documents []IndexedDocument
+	config    *config.Config
 }
 
 func NewIndex(
-	indexDataDir string,
-	maxResults int,
+	config *config.Config,
 	logger *zap.SugaredLogger,
 ) (*Index, error) {
 	startTime := time.Now()
 	index := &Index{
-		maxResults: maxResults,
-		logger:     logger,
-		documents:  make([]IndexedDocument, 0, maxResults),
+		config:    config,
+		logger:    logger,
+		documents: make([]IndexedDocument, 0, config.MaxSearchResults),
 	}
-	dir, err := os.Open(indexDataDir)
+	dir, err := os.Open(config.IndexDataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +55,7 @@ func NewIndex(
 			// Skip non-csv files
 			continue
 		}
-		filepath := path.Join(indexDataDir, filename)
+		filepath := path.Join(config.IndexDataDir, filename)
 		logger.
 			With("filepath", filepath).
 			Info("Loading data file")
@@ -72,18 +74,12 @@ func NewIndex(
 				// Make sure we read the whole file
 				break
 			}
-			if len(record) < 5 {
-				// Skip invalid records
+			if len(record) < 5 || record[0] == "AuthorID" {
+				// Skip invalid records or header
 				continue
 			}
 
-			index.documents = append(
-				index.documents,
-				IndexedDocument{
-					Description: record[3],
-					ImageUrl:    record[4],
-				},
-			)
+			index.documents = append(index.documents, index.getTokenizedDocument(record))
 		}
 	}
 
@@ -94,22 +90,59 @@ func NewIndex(
 	return index, nil
 }
 
+func (i *Index) getTokenizedDocument(record []string) IndexedDocument {
+	return IndexedDocument{
+		Description: record[3],
+		ImageUrl:    record[4],
+		tokens:      i.getTokens(record[3]),
+	}
+}
+
 func (i *Index) Search(keywords ...string) ([]IndexedDocument, error) {
 	results := make([]IndexedDocument, 0)
+
 	for _, document := range i.documents {
-		found := true
 		for _, keyword := range keywords {
-			if !strings.Contains(document.Description, keyword) {
-				found = false
+			if slices.Index(document.tokens, i.tokenizer(keyword)) >= 0 {
+				results = append(results, document)
+
 				break
 			}
 		}
-		if found {
-			results = append(results, document)
-		}
-		if len(results) >= i.maxResults {
+
+		if len(results) >= i.config.MaxSearchResults {
 			break
 		}
 	}
+
 	return results, nil
+}
+
+func (i *Index) getTokens(text string) []string {
+	tokens := strings.Fields(text)
+
+	result := make([]string, 0, len(tokens))
+
+	for _, token := range tokens {
+		token = i.tokenizer(token)
+
+		if token != "" {
+			result = append(result, token)
+		}
+	}
+
+	slices.Sort(result)
+
+	return result
+}
+
+func (i *Index) tokenizer(token string) string {
+	token = strings.Trim(token, ".,:;!?'\" ")
+	token = strings.ToUpper(token)
+
+	if len(token) >= i.config.MinTokenLength && len(token) <= i.config.MaxTokenLength {
+		return token
+	}
+
+	return ""
 }

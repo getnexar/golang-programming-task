@@ -56,7 +56,7 @@ func provideLogger(config *config.Config) (*zap.SugaredLogger, error) {
 }
 
 func provideIndex(logger *zap.SugaredLogger, config *config.Config) (*index.Index, error) {
-	return index.NewIndex(config.IndexDataDir, config.MaxSearchResults, logger)
+	return index.NewIndex(config, logger)
 }
 
 func provideHandlers(logger *zap.SugaredLogger, index *index.Index) handlers.HandlersInterface {
