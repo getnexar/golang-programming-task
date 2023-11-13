@@ -1,5 +1,6 @@
 package index
 
 type IndexInterface interface {
-	Search(keywords ...string) ([][2]string, error)
+	Search(keywords ...string) []IndexedDocument
+	Delete(keywords ...string) AffectedDocuments
 }
