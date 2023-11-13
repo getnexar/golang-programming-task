@@ -40,12 +40,7 @@ func (h *Handlers) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := h.index.Search(q...)
-
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	results := h.index.Search(q...)
 
 	response := handlers_models.SearchResponse{Results: results}
 	w.Header().Set("Content-Type", "application/json")

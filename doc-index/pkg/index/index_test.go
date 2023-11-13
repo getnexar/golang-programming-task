@@ -98,7 +98,6 @@ func TestGetTokenizedDocument(t *testing.T) {
 			IndexedDocument{
 				Description: "Simple Document",
 				ImageUrl:    "image-url",
-				tokens:      index.getTokens("Simple Document"),
 			},
 		},
 	}
@@ -106,7 +105,7 @@ func TestGetTokenizedDocument(t *testing.T) {
 	for _, test := range tests {
 		t.Run(
 			test.name, func(t *testing.T) {
-				result := index.getTokenizedDocument(test.inputRecord)
+				result := index.getDocument(test.inputRecord)
 
 				if !reflect.DeepEqual(result, test.expectedDocument) {
 					t.Errorf("Expected document %v, got %v", test.expectedDocument, result)
@@ -178,51 +177,70 @@ func TestNewIndex(t *testing.T) {
 	)
 }
 
+func TestUpdateInvertedIndex(t *testing.T) {
+	index := newIndex()
+
+	index.updateInvertedIndex([]string{"one", "two", "five"}, 0)
+	index.updateInvertedIndex([]string{"one", "two"}, 1)
+	index.updateInvertedIndex([]string{"one", "two", "three"}, 2)
+	index.updateInvertedIndex([]string{"four", "five"}, 3)
+
+	expectedInvertedIndex := map[string][]int{
+		"one":   {0, 1, 2},
+		"two":   {0, 1, 2},
+		"five":  {0, 3},
+		"three": {2},
+		"four":  {3},
+	}
+
+	if !reflect.DeepEqual(index.invertedIndex, expectedInvertedIndex) {
+		t.Errorf("Expected inverted index %v, got %v", expectedInvertedIndex, index.invertedIndex)
+	}
+}
+
 func TestQuery(t *testing.T) {
 	index := newIndex()
-	index.documents = getSampleData(index)
+	index.documents = getSampleData()
 	index.config.MaxSearchResults = len(index.documents)
+	indexSampleData(index)
 
 	tests := []struct {
-		name              string
-		keywords          []string
-		expectedDocuments []IndexedDocument
+		name                    string
+		keywords                []string
+		expectedDocumentIndexes []int
 	}{
 		{
-			name:              "First Document",
-			keywords:          []string{"one"},
-			expectedDocuments: []IndexedDocument{index.documents[0]},
+			name:                    "First Document",
+			keywords:                []string{"one"},
+			expectedDocumentIndexes: []int{0},
 		},
 		{
-			name:              "Second document. Case insensitive. Two keywords",
-			keywords:          []string{"two", "Document"},
-			expectedDocuments: []IndexedDocument{index.documents[1]},
+			name:                    "Second document. Case insensitive. Two keywords",
+			keywords:                []string{"two", "Document"},
+			expectedDocumentIndexes: []int{1},
 		},
 		{
-			name:              "Query for three keywords, None match",
-			keywords:          []string{"one", "document", "four"},
-			expectedDocuments: []IndexedDocument{},
+			name:                    "Query for three keywords, None match",
+			keywords:                []string{"one", "document", "four"},
+			expectedDocumentIndexes: []int{},
 		},
 		{
-			name:              "All documents match",
-			keywords:          []string{"document"},
-			expectedDocuments: index.documents,
+			name:                    "All documents match",
+			keywords:                []string{"document"},
+			expectedDocumentIndexes: []int{0, 1, 2},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(
 			test.name, func(t *testing.T) {
-				results := make([]IndexedDocument, 0)
+				result := index.query(test.keywords)
 
-				index.query(
-					test.keywords, func(documentIndex int, document *IndexedDocument) {
-						results = append(results, *document)
-					},
-				)
+				slices.Sort(test.expectedDocumentIndexes)
+				slices.Sort(result)
 
-				if !reflect.DeepEqual(results, test.expectedDocuments) {
-					t.Errorf("Expected documents %v, got %v", test.expectedDocuments, results)
+				if !reflect.DeepEqual(result, test.expectedDocumentIndexes) {
+					t.Errorf("Expected document indexes %v, got %v", test.expectedDocumentIndexes, result)
 				}
 			},
 		)
@@ -231,7 +249,8 @@ func TestQuery(t *testing.T) {
 
 func TestMaxSearchResults(t *testing.T) {
 	index := newIndex()
-	index.documents = getSampleData(index)
+	index.documents = getSampleData()
+	indexSampleData(index)
 
 	tests := []struct {
 		name       string
@@ -253,18 +272,12 @@ func TestMaxSearchResults(t *testing.T) {
 	for _, test := range tests {
 		t.Run(
 			test.name, func(t *testing.T) {
-				foundDocuments := 0
-
 				index.config.MaxSearchResults = test.maxResults
 
-				index.query(
-					test.keywords, func(documentIndex int, document *IndexedDocument) {
-						foundDocuments++
-					},
-				)
+				result := index.query(test.keywords)
 
-				if foundDocuments != test.maxResults {
-					t.Errorf("Expected %d results, got %d", test.maxResults, foundDocuments)
+				if len(result) != test.maxResults {
+					t.Errorf("Expected %d results, got %d", test.maxResults, len(result))
 				}
 			},
 		)
@@ -273,7 +286,8 @@ func TestMaxSearchResults(t *testing.T) {
 
 func TestSearch(t *testing.T) {
 	index := newIndex()
-	index.documents = getSampleData(index)
+	index.documents = getSampleData()
+	indexSampleData(index)
 	index.config.MaxSearchResults = 10
 
 	tests := []struct {
@@ -306,11 +320,7 @@ func TestSearch(t *testing.T) {
 	for _, test := range tests {
 		t.Run(
 			test.name, func(t *testing.T) {
-				results, err := index.Search(test.keywords...)
-
-				if err != nil {
-					t.Errorf("Error searching index: %v", err)
-				}
+				results := index.Search(test.keywords...)
 
 				if !reflect.DeepEqual(results, test.expectedDocuments) {
 					t.Errorf("Expected documents %v, got %v", test.expectedDocuments, results)
@@ -322,7 +332,7 @@ func TestSearch(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	index := newIndex()
-	index.documents = getSampleData(index)
+	index.documents = getSampleData()
 	index.config.MaxSearchResults = 10
 
 	tests := []struct {
@@ -353,7 +363,7 @@ func TestDelete(t *testing.T) {
 
 	for _, test := range tests {
 		// Restore deleted documents
-		index.documents = getSampleData(index)
+		index.documents = getSampleData()
 
 		t.Run(
 			test.name, func(t *testing.T) {
@@ -373,13 +383,81 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestIntersect(t *testing.T) {
+	index := newIndex()
+
+	t.Run(
+		"Intersection of Two Slices", func(t *testing.T) {
+			slice1 := []int{1, 2, 3, 4, 5}
+			slice2 := []int{3, 4, 5, 6, 7}
+			result := index.intersect(slice1, slice2)
+
+			expected := []int{3, 4, 5}
+
+			if !reflect.DeepEqual(result, expected) {
+				t.Errorf("Expected intersection %v, got %v", expected, result)
+			}
+		},
+	)
+
+	t.Run(
+		"Intersection of Three Slices", func(t *testing.T) {
+			slice1 := []int{1, 2, 3, 4, 5}
+			slice2 := []int{3, 4, 5, 6, 7}
+			slice3 := []int{5, 6, 7, 8, 9}
+			result := index.intersect(slice1, slice2, slice3)
+
+			expected := []int{5}
+
+			if !reflect.DeepEqual(result, expected) {
+				t.Errorf("Expected intersection %v, got %v", expected, result)
+			}
+		},
+	)
+
+	t.Run(
+		"Intersection of Slice and slice of slices", func(t *testing.T) {
+			slice1 := []int{1, 2, 3, 4, 5}
+
+			data := [][]int{
+				{3, 4, 5, 6, 7},
+				{5, 6, 7, 8, 9},
+			}
+
+			result := index.intersect(slice1, data...)
+
+			expected := []int{5}
+
+			if !reflect.DeepEqual(result, expected) {
+				t.Errorf("Expected intersection %v, got %v", expected, result)
+			}
+		},
+	)
+
+	t.Run(
+		"No Intersection", func(t *testing.T) {
+			slice1 := []int{1, 2, 3}
+			slice2 := []int{4, 5, 6}
+			slice3 := []int{7, 8, 9}
+			result := index.intersect(slice1, slice2, slice3)
+
+			expected := []int{}
+
+			if !reflect.DeepEqual(result, expected) {
+				t.Errorf("Expected intersection %v, got %v", expected, result)
+			}
+		},
+	)
+}
+
 func newIndex() *Index {
 	configOptions, _ := config.Load()
 
 	configOptions.MaxTokenLength = 10
 
 	return &Index{
-		config: configOptions,
+		config:        configOptions,
+		invertedIndex: make(map[string][]int),
 	}
 }
 
@@ -391,22 +469,25 @@ func createTestFile(t *testing.T, filename string, data []byte) {
 	}
 }
 
-func getSampleData(index *Index) []IndexedDocument {
+func getSampleData() []IndexedDocument {
 	return []IndexedDocument{
 		{
 			Description: "Document One. Top secret!",
 			ImageUrl:    "image-url",
-			tokens:      index.getTokens("Document One. Top secret!"),
 		},
 		{
 			Description: "Document Two. Top secret!",
 			ImageUrl:    "image-url",
-			tokens:      index.getTokens("Document Two. Top secret!"),
 		},
 		{
 			Description: "Document Three",
 			ImageUrl:    "image-url",
-			tokens:      index.getTokens("Document Three"),
 		},
+	}
+}
+
+func indexSampleData(index *Index) {
+	for documentIndex, document := range index.documents {
+		index.updateInvertedIndex(index.getTokens(document.Description), documentIndex)
 	}
 }
